@@ -209,10 +209,21 @@ export default class PointCloudVisualizer implements Visualizer {
       "position",
       new THREE.InterleavedBufferAttribute(new THREE.InterleavedBuffer(this.command.buffer, 4), 3, 0, false)
     );
+    const ENABLE_COLORS = true;
+    if (ENABLE_COLORS) {   // interleaved color bytes
+      geometry.setAttribute(
+        "color",
+        new THREE.InterleavedBufferAttribute(
+          new THREE.InterleavedBuffer(new Uint8Array(this.command.buffer.buffer), 16),
+          4, 12, true // number of items, offset bytes, should be normalized --> note that for #items, 3=RGB, 4=RGBA
+        )
+      )
+    }
     const material = new THREE.PointsMaterial({
       size: 2,
       sizeAttenuation: false,
-      color: isDark ? 0xffffff : 0xaa00aa
+      // color: isDark ? 0xffffff : 0xaa00aa,
+      vertexColors: ENABLE_COLORS
     }); // https://threejs.org/docs/#api/en/materials/PointsMaterial
     geometry.computeBoundingSphere();
     const points = new THREE.Points(geometry, material);
