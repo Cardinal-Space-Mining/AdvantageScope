@@ -207,17 +207,20 @@ export default class PointCloudVisualizer implements Visualizer {
     const geometry = new THREE.BufferGeometry();
     geometry.setAttribute(
       "position",
-      new THREE.InterleavedBufferAttribute(new THREE.InterleavedBuffer(this.command.buffer, 4), 3, 0, false)
+      new THREE.InterleavedBufferAttribute(
+        new THREE.InterleavedBuffer(new Float32Array(this.command.buffer.buffer), 4),
+        3, 0, false
+      )
     );
     const ENABLE_COLORS = true;
     if (ENABLE_COLORS) {   // interleaved color bytes
       geometry.setAttribute(
         "color",
         new THREE.InterleavedBufferAttribute(
-          new THREE.InterleavedBuffer(new Uint8Array(this.command.buffer.buffer), 16),
+          new THREE.InterleavedBuffer(this.command.buffer, 16),
           4, 12, true // number of items, offset bytes, should be normalized --> note that for #items, 3=RGB, 4=RGBA
         )
-      )
+      );
     }
     const material = new THREE.PointsMaterial({
       size: 2,
@@ -253,7 +256,6 @@ export default class PointCloudVisualizer implements Visualizer {
     this.renderer.setPixelRatio(devicePixelRatio);
     this.renderer.render(this.scene, this.camera);
 
-    console.log("PointCloudVisualizer: render frame completed!");
   }
 }
 

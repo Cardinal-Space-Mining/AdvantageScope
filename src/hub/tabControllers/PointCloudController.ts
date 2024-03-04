@@ -75,26 +75,31 @@ export default class PointCloudController extends TimelineVizController {
         case LoggableType.Raw: {
           const valset = window.log.getRaw(field.key, time, time);
           const arr = valset?.values[0];    // the "range" is only a single timestamp so we only ever should have a single value
-          // console.log('point data timeline scroll: recieved raw data of length %d', arr?.length);
+          
+          const BYTES_PER_ELEM : number = 16;
+          if (arr?.buffer !== undefined) {
+            const trimmed_length = arr.length - (arr.length % BYTES_PER_ELEM);  // arr is Uint8Array so length is number of bytes
+            return {
+              buffer: new Uint8Array( (arr.byteOffset == 0 ? arr.buffer : arr.buffer.slice(arr.byteOffset)), 0, trimmed_length ),
+              src_ts: valset?.timestamps[0]
+            };
+          }
 
-          return {
-            buffer: (arr !== undefined) ? new Float32Array(arr.buffer, 0, (arr.length - (arr.length % 16)) / 4) : null,
-            src_ts: valset?.timestamps[0]
-          };
-
-        }
-
-        case LoggableType.NumberArray: {
-          const valset = window.log.getNumberArray(field.key, time, time);    // same here
-          const arr = valset?.values[0];
-          // console.log('point data timeline scroll: received number array of length %d', arr?.length);
-
-          return {
-            buffer: (arr !== undefined) ? new Float32Array(arr.slice(0, arr.length - (arr.length % 4))) : null,
-            src_ts: valset?.timestamps[0]
-          };
+          break;
 
         }
+
+        // case LoggableType.NumberArray: {
+        //   const valset = window.log.getNumberArray(field.key, time, time);    // same here
+        //   const arr = valset?.values[0];
+        //   // console.log('point data timeline scroll: received number array of length %d', arr?.length);
+
+        //   return {
+        //     buffer: (arr !== undefined) ? new Float32Array(arr.slice(0, arr.length - (arr.length % 4))) : null,
+        //     src_ts: valset?.timestamps[0]
+        //   };
+
+        // }
 
       }
 
