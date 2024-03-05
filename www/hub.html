@@ -473,7 +473,7 @@
             <table class="timeline-viz-config">
               <tbody>
                 <tr>
-                  <th>Point Cloud</th>
+                  <th>Input</th>
                   <th>Data</th>
                   <th>Display</th>
                 </tr>
@@ -483,56 +483,40 @@
                     <span class="field-name">&lt;Drag Here&gt;</span>
                   </td>
                   <td>
-                    <span class="label">Data Option 1:</span>
+                    <span class="label">XYZ Datatype:</span>
                     <select tabindex="-1">
-                      <option value="v1">value 1</option>
-                      <option value="v2">value 2</option>
-                      <option value="v3">value 3</option>
+                      <option value="f32">Float32</option>
+                      <option value="f64">Float64</option>
+                      <option value="i32">Int32</option>
+                      <option value="i64">Int64</option>
+                      <option vlaue="i8">Int8 (byte)</option>
                     </select>
+                    <span class="label" hidden>signed?</span>
+                    <input tabindex="-1" type="checkbox" checked hidden>
                   </td>
                   <td>
-                    <span class="label">Display Option 1:</span>
-                    <select tabindex="-1">
-                      <option value="v1">value 1</option>
-                      <option value="v2">value 2</option>
-                      <option value="v3">value 3</option>
-                    </select>
-                  </td>
-                </tr>
-                <tr>
-                  <td>
-                    <span class="label">Data Option 2:</span>
-                    <select tabindex="-1">
-                      <option value="v1">value 1</option>
-                      <option value="v2">value 2</option>
-                      <option value="v3">value 3</option>
-                    </select>
-                  </td>
-                  <td>
-                    <span class="label">Display Option 2:</span>
-                    <select tabindex="-1">
-                      <option value="v1">value 1</option>
-                      <option value="v2">value 2</option>
-                      <option value="v3">value 3</option>
-                    </select>
+                    <span class="label">Display Interleaved Colors:</span>
+                    <input tabindex="-1" type="checkbox" checked>
                   </td>
                 </tr>
                 <tr>
                   <td>
-                    <span class="label">Data Option 3:</span>
-                    <select tabindex="-1">
-                      <option value="v1">value 1</option>
-                      <option value="v2">value 2</option>
-                      <option value="v3">value 3</option>
-                    </select>
+                    <span class="label">Elements Per Point:</span>
+                    <input type="number" min="3" value="4" step="1">
                   </td>
                   <td>
-                    <span class="label">Display Option 3:</span>
-                    <select tabindex="-1">
-                      <option value="v1">value 1</option>
-                      <option value="v2">value 2</option>
-                      <option value="v3">value 3</option>
-                    </select>
+                    <span class="label">Default Color:</span>
+                    <input type="color" value="#000000">
+                    <button type="button" style="">Reset</button>
+                  </td>
+                </tr>
+                <tr>
+                  <td>
+                    <!-- empty -->
+                  </td>
+                  <td>
+                    <span class="label">Point Size (px):</span>
+                    <input type="number" min="1" value="2" step="1">
                   </td>
                 </tr>
               </tbody>

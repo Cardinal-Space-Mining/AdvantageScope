@@ -6,6 +6,15 @@ import TimelineVizController from "./TimelineVizController";
 
 export default class PointCloudController extends TimelineVizController {
 
+  private UI_DTYPE: HTMLSelectElement;
+  private UI_DTYPE_SIGNED_SPAN: HTMLSpanElement;
+  private UI_DTYPE_SIGNED: HTMLInputElement;
+  private UI_POINT_ELEMS: HTMLInputElement;
+  private UI_USE_COLORS: HTMLInputElement;
+  private UI_STATIC_COLOR: HTMLInputElement;
+  private UI_COLOR_RESET: HTMLButtonElement;
+  private UI_POINT_SIZE: HTMLInputElement;
+
   constructor(content: HTMLElement) {
     let configBody = content.getElementsByClassName("timeline-viz-config")[0].firstElementChild as HTMLElement;
     super(
@@ -38,6 +47,39 @@ export default class PointCloudController extends TimelineVizController {
       )
     );
 
+    const UI_ROW_1 = configBody.children[1];
+    const UI_ROW_2 = configBody.children[2];
+    const UI_ROW_3 = configBody.children[3];
+    const UI_C1A = UI_ROW_1.children[1];
+    const UI_C1B = UI_ROW_2.children[0];
+    const UI_C2A = UI_ROW_1.children[2];
+    const UI_C2B = UI_ROW_2.children[1];
+    const UI_C2C = UI_ROW_3.children[1];    // this crap is so confusing :|
+
+    this.UI_DTYPE = UI_C1A.children[1] as HTMLSelectElement;
+    this.UI_DTYPE_SIGNED_SPAN = UI_C1A.children[2] as HTMLSpanElement;
+    this.UI_DTYPE_SIGNED = UI_C1A.children[3] as HTMLInputElement;
+    this.UI_POINT_ELEMS = UI_C1B.children[1] as HTMLInputElement;
+    this.UI_USE_COLORS = UI_C2A.children[1] as HTMLInputElement;
+    this.UI_STATIC_COLOR = UI_C2B.children[1] as HTMLInputElement;
+    this.UI_COLOR_RESET = UI_C2B.children[2] as HTMLButtonElement;
+    this.UI_POINT_SIZE = UI_C2C.children[1] as HTMLInputElement;
+
+    this.UI_COLOR_RESET.addEventListener("click", () => {
+      this.UI_STATIC_COLOR.value = (window.matchMedia("(prefers-color-scheme: dark)").matches) ? "#ffffff" : "#222222";
+    });
+    this.UI_DTYPE.addEventListener("change", () => this.updateUiDependentControls());
+
+  }
+
+  /** update ui values that are dependant of other controls */
+  private updateUiDependentControls() {
+    console.log("update dependent controls: ", this.options);
+    if (Array.from(this.UI_DTYPE.value)[0] == 'i') {
+      this.UI_DTYPE_SIGNED_SPAN.hidden = this.UI_DTYPE_SIGNED.hidden = false;
+    } else {
+      this.UI_DTYPE_SIGNED_SPAN.hidden = this.UI_DTYPE_SIGNED.hidden = true;
+    }
   }
 
 
@@ -51,12 +93,23 @@ export default class PointCloudController extends TimelineVizController {
 
   get options(): { [id: string]: any } {
     return {
-      // currently we do not have any options
+      dtype: this.UI_DTYPE.value,
+      dtype_signed: this.UI_DTYPE_SIGNED.checked,
+      point_elems: this.UI_POINT_ELEMS.value,
+      use_point_colors: this.UI_USE_COLORS.checked,
+      static_color: this.UI_STATIC_COLOR.value,
+      point_size: this.UI_POINT_SIZE.value,
     };
   }
 
   set options(options: { [id: string]: any }) {
-    // currently we do not have any options
+    if(options.dtype) this.UI_DTYPE.value = options.dtype;
+    if(options.dtype_signed) this.UI_DTYPE_SIGNED.checked = options.dtype_signed;
+    if(options.point_elems) this.UI_POINT_ELEMS.value = options.point_elems;
+    if(options.use_point_colors) this.UI_USE_COLORS.checked = options.use_point_colors;
+    if(options.static_color) this.UI_STATIC_COLOR.value = options.static_color;
+    if(options.point_size) this.UI_POINT_SIZE.value = options.point_size;
+    this.updateUiDependentControls();
   }
 
   newAssets() {}  // shouldn't need to do anything with this
@@ -81,7 +134,8 @@ export default class PointCloudController extends TimelineVizController {
             const trimmed_length = arr.length - (arr.length % BYTES_PER_ELEM);  // arr is Uint8Array so length is number of bytes
             return {
               buffer: new Uint8Array( (arr.byteOffset == 0 ? arr.buffer : arr.buffer.slice(arr.byteOffset)), 0, trimmed_length ),
-              src_ts: valset?.timestamps[0]
+              src_ts: valset?.timestamps[0],
+              ui_options: this.options
             };
           }
 
@@ -108,7 +162,8 @@ export default class PointCloudController extends TimelineVizController {
     // default object with null buffer
     return {
       buffer: null,
-      src_ts: undefined
+      src_ts: undefined,
+      ui_options: this.options
     };
 
   }

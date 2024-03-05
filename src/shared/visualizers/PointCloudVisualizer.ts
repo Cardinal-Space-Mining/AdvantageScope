@@ -135,8 +135,9 @@ export default class PointCloudVisualizer implements Visualizer {
 
   render(command: any): number | null {
     if (
-      (this.command === undefined && command.buffer?.length > 0) ||
-      (this.command !== undefined && this.command.src_ts !== command.src_ts)
+      // (this.command === undefined && command.buffer?.length > 0) ||
+      // (this.command !== undefined && this.command.src_ts !== command.src_ts)
+      JSON.stringify(command) !== JSON.stringify(this.command)
     ) {
       this.shouldRender = true;
     }
@@ -203,6 +204,10 @@ export default class PointCloudVisualizer implements Visualizer {
       this.camera.updateProjectionMatrix();
     }
 
+    if (this.command.buffer.buffer.byteLength % 4 != 0) {
+      console.log("buffer byte length error!", this.command.buffer.buffer);
+    }
+
     // Create points objects
     const geometry = new THREE.BufferGeometry();
     geometry.setAttribute(
@@ -212,8 +217,13 @@ export default class PointCloudVisualizer implements Visualizer {
         3, 0, false
       )
     );
-    const ENABLE_COLORS = true;
-    if (ENABLE_COLORS) {   // interleaved color bytes
+    const material = new THREE.PointsMaterial({
+      size: +this.command.ui_options.point_size,
+      sizeAttenuation: false,
+      // color: isDark ? 0xffffff : 0xaa00aa,
+      // vertexColors: ENABLE_COLORS
+    }); // https://threejs.org/docs/#api/en/materials/PointsMaterial
+    if (this.command.ui_options.use_point_colors) {
       geometry.setAttribute(
         "color",
         new THREE.InterleavedBufferAttribute(
@@ -221,13 +231,10 @@ export default class PointCloudVisualizer implements Visualizer {
           4, 12, true // number of items, offset bytes, should be normalized --> note that for #items, 3=RGB, 4=RGBA
         )
       );
+      material.vertexColors = true;
+    } else {
+      material.color = new THREE.Color(this.command.ui_options.static_color);
     }
-    const material = new THREE.PointsMaterial({
-      size: 2,
-      sizeAttenuation: false,
-      // color: isDark ? 0xffffff : 0xaa00aa,
-      vertexColors: ENABLE_COLORS
-    }); // https://threejs.org/docs/#api/en/materials/PointsMaterial
     geometry.computeBoundingSphere();
     const points = new THREE.Points(geometry, material);
 
