@@ -484,7 +484,7 @@
                   </td>
                   <td>
                     <span class="label">XYZ Datatype:</span>
-                    <select tabindex="-1">
+                    <select tabindex="-1" disabled>
                       <option value="f32">Float32</option>
                       <option value="f64">Float64</option>
                       <option value="i32">Int32</option>
@@ -492,7 +492,7 @@
                       <option vlaue="i8">Int8 (byte)</option>
                     </select>
                     <span class="label" hidden>signed?</span>
-                    <input tabindex="-1" type="checkbox" checked hidden>
+                    <input tabindex="-1" type="checkbox" checked hidden disabled>
                   </td>
                   <td>
                     <span class="label">Display Interleaved Colors:</span>
@@ -502,12 +502,12 @@
                 <tr>
                   <td>
                     <span class="label">Elements Per Point:</span>
-                    <input type="number" min="3" value="4" step="1">
+                    <input type="number" min="3" value="4" step="1" disabled>
                   </td>
                   <td>
                     <span class="label">Default Color:</span>
                     <input type="color" value="#000000">
-                    <button type="button" style="">Reset</button>
+                    <button type="button" style="color:black; background-image: white">Reset</button>
                   </td>
                 </tr>
                 <tr>
