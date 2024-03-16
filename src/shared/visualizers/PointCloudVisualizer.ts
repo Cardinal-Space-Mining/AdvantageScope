@@ -137,7 +137,7 @@ export default class PointCloudVisualizer implements Visualizer {
     if (
       // (this.command === undefined && command.buffer?.length > 0) ||
       // (this.command !== undefined && this.command.src_ts !== command.src_ts)
-      JSON.stringify(command) !== JSON.stringify(this.command)
+      JSON.stringify(command) !== JSON.stringify(this.command)  // << this is bad!!!
     ) {
       this.shouldRender = true;
     }
