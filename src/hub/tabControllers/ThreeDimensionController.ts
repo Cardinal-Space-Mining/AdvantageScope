@@ -98,6 +98,9 @@ export default class ThreeDimensionController extends TimelineVizController {
   private UNIT_DISTANCE: HTMLInputElement;
   private UNIT_ROTATION: HTMLInputElement;
 
+  private MAP_HEADING: HTMLElement;
+  private MAP_COLUMN: HTMLElement;
+
   private newAssetsCounter = 0;
 
   constructor(content: HTMLElement) {
@@ -105,7 +108,12 @@ export default class ThreeDimensionController extends TimelineVizController {
     super(
       content,
       TabType.ThreeDimension,
-      [],
+      [
+        {
+          element: configBody.children[1].children[2] as HTMLElement,
+          types: [ LoggableType.Raw ]
+        }
+      ],
       [
         {
           element: configBody.children[1].children[0] as HTMLElement,
@@ -170,13 +178,15 @@ export default class ThreeDimensionController extends TimelineVizController {
     );
 
     // Get option inputs
-    this.FIELD = configBody.children[1].children[2].children[1] as HTMLSelectElement;
-    this.ALLIANCE = configBody.children[1].children[2].children[2] as HTMLSelectElement;
-    this.FIELD_SOURCE_LINK = configBody.children[1].children[2].children[3] as HTMLInputElement;
+    this.FIELD = configBody.children[1].children[3].children[1] as HTMLSelectElement;
+    this.ALLIANCE = configBody.children[1].children[3].children[2] as HTMLSelectElement;
+    this.FIELD_SOURCE_LINK = configBody.children[1].children[3].children[3] as HTMLInputElement;
     this.ROBOT = configBody.children[2].children[0].children[1] as HTMLSelectElement;
     this.ROBOT_SOURCE_LINK = configBody.children[2].children[0].children[2] as HTMLInputElement;
     this.UNIT_DISTANCE = configBody.children[3].children[0].children[1] as HTMLInputElement;
     this.UNIT_ROTATION = configBody.children[3].children[0].children[2] as HTMLInputElement;
+    this.MAP_HEADING = configBody.children[0].children[2] as HTMLElement;
+    this.MAP_COLUMN = configBody.children[1].children[2] as HTMLElement;
 
     // Set default alliance value
     this.ALLIANCE.value = "auto";
@@ -211,7 +221,7 @@ export default class ThreeDimensionController extends TimelineVizController {
       }
       let options: string[] = [];
       if (window.assets !== null) {
-        options = [...window.assets.field3ds.map((game) => game.name), "Evergreen", "Axes"];
+        options = [...window.assets.field3ds.map((game) => game.name), "Evergreen", "Axes", "Map"];  // MAP: add option
         options.forEach((title) => {
           let option = document.createElement("option");
           option.innerText = title;
@@ -255,8 +265,12 @@ export default class ThreeDimensionController extends TimelineVizController {
     let robotConfig = window.assets?.robots.find((game) => game.name === this.ROBOT.value);
     this.ROBOT_SOURCE_LINK.hidden = robotConfig !== undefined && robotConfig.sourceUrl === undefined;
 
-    if (this.FIELD.value === "Axes") this.ALLIANCE.value = "blue";
-    this.ALLIANCE.hidden = this.FIELD.value === "Axes";
+    let is_map = this.FIELD.value === "Map";
+    this.MAP_COLUMN.hidden = this.MAP_HEADING.hidden = !is_map;
+    if (this.FIELD.value === "Axes" || is_map) {
+      this.ALLIANCE.value = "blue";
+      this.ALLIANCE.hidden = true;
+    }
     if (fieldConfig !== undefined && !skipAllianceReset) {
       this.ALLIANCE.value = fieldConfig.defaultOrigin;
     }
@@ -410,6 +424,7 @@ export default class ThreeDimensionController extends TimelineVizController {
     ThreeDimensionVisualizer.GHOST_COLORS.forEach((color) => (zebraGhostDataTranslations[color] = []));
     let zebraGhostData: { [key: string]: Pose3d[] } = {};
     ThreeDimensionVisualizer.GHOST_COLORS.forEach((color) => (zebraGhostData[color] = []));
+    let mapData: any = undefined;
 
     // Get 3D data
     this.getListFields()[0].forEach((field) => {
@@ -718,6 +733,29 @@ export default class ThreeDimensionController extends TimelineVizController {
       });
     });
 
+    // Get map data if applicable
+    const map_field = this.getFields()[0];
+    if (this.FIELD.value === "Map" && map_field) {
+      switch (map_field.sourceType) {
+        case LoggableType.Raw: {
+          const valset = window.log.getRaw(map_field.key, time, time);
+          const map_data = valset?.values[0];
+          if (map_data?.buffer) {
+            // get data, fill data >>
+            mapData = {
+              buffer: null,
+              res_x: undefined,
+              res_y: undefined,
+              origin_x: undefined,
+              origin_y: undefined
+            };
+          }
+          break;
+        }
+        // no default since mapData starts as undefined
+      }
+    }
+
     // Package command data
     return {
       poses: {
@@ -743,6 +781,7 @@ export default class ThreeDimensionController extends TimelineVizController {
         zebraMarker: zebraMarkerData,
         zebraGhost: zebraGhostData
       },
+      map: mapData,
       options: this.options,
       allianceRedOrigin: allianceRedOrigin,
       autoDriverStation: getDriverStation(window.log, time),
