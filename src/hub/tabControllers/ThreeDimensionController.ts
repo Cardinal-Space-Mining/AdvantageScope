@@ -424,7 +424,7 @@ export default class ThreeDimensionController extends TimelineVizController {
     ThreeDimensionVisualizer.GHOST_COLORS.forEach((color) => (zebraGhostDataTranslations[color] = []));
     let zebraGhostData: { [key: string]: Pose3d[] } = {};
     ThreeDimensionVisualizer.GHOST_COLORS.forEach((color) => (zebraGhostData[color] = []));
-    let mapData: any = undefined;
+    let mapData = undefined;
 
     // Get 3D data
     this.getListFields()[0].forEach((field) => {
@@ -741,13 +741,32 @@ export default class ThreeDimensionController extends TimelineVizController {
           const valset = window.log.getRaw(map_field.key, time, time);
           const map_data = valset?.values[0];
           if (map_data?.buffer) {
-            // get data, fill data >>
+            const BYTES_PER_CELL = 1;
+            const bytes_off = map_data.byteOffset;
+            const bytes_len = map_data.length;
+            /* Metadata layout is as follows
+             * 2x Int32 - (X,Y) size of map buffer
+             * 2x Float32 - (X,Y) origin in meters(?)
+             * 1x Float32 - Cell resolution in meters(?)
+             * ...meaning that the first 20 bytes should be metadata. */
+            if (bytes_len <= 20) break; // no buffer = no point in mapping
+            const aligned_buffer = bytes_off == 0 ? map_data.buffer : map_data.buffer.slice(bytes_off); // need to align since we can't create int/float views with len%4!=0 byte offsets
+            const as_int32 = new Int32Array(aligned_buffer, 0, 5);   // only map the first 20 bytes for each of these
+            const as_float32 = new Float32Array(aligned_buffer, 0, 5);
+            // THIS ONLY WORKS SINCE BOTH TYPES ARE THE SAME SIZE -- MAKE SURE TO UPDATE INDICES IF THIS CHANGES!
+            const size_x = as_int32[0];
+            const size_y = as_int32[1];
+            const area = size_x * size_y;
+            const map_bytes = area * BYTES_PER_CELL;
+            if (area < 1 || bytes_len - 20 < map_bytes) break;   // break if invalid buffer or size
+            // fill data
             mapData = {
-              buffer: null,
-              res_x: undefined,
-              res_y: undefined,
-              origin_x: undefined,
-              origin_y: undefined
+              buffer: new Uint8Array( aligned_buffer, 20, map_bytes ),  // buffer is already aligned, just offset from the metadata bytes and use the size of the map
+              size_x: size_x,
+              size_y: size_y,
+              origin_x: as_float32[2],  // see note about updating indices if elem type sizes are changed
+              origin_y: as_float32[3],
+              res: as_float32[4]
             };
           }
           break;

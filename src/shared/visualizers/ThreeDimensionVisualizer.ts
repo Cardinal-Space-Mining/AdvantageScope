@@ -112,6 +112,7 @@ export default class ThreeDimensionVisualizer implements Visualizer {
   private zebraMarkerRedSet: ObjectSet;
   private zebraTeamLabels: { [key: string]: CSS2DObject } = {};
   private zebraGhostSets: { [key: string]: ObjectSet } = {};
+  private fieldMap: THREE.Mesh | null = null;
 
   private command: any;
   private shouldRender = false;
@@ -521,9 +522,14 @@ export default class ThreeDimensionVisualizer implements Visualizer {
   private resetCamera() {
     if (this.cameraIndex === -1) {
       // Orbit field
-      if (this.command && this.command.options.field === "Axes") {
-        this.camera.position.copy(this.ORBIT_AXES_DEFAULT_POSITION);
-        this.controls.target.copy(this.ORBIT_AXES_DEFAULT_TARGET);
+      if (this.command) {
+        if (this.command.options.field === "Axes") {
+          this.camera.position.copy(this.ORBIT_AXES_DEFAULT_POSITION);
+          this.controls.target.copy(this.ORBIT_AXES_DEFAULT_TARGET);
+        } else if (this.command.options.field === "Map") {
+          this.camera.position.set(1, 1, 1);
+          this.controls.target.set(0, 0, 0);
+        }
       } else {
         this.camera.position.copy(this.ORBIT_FIELD_DEFAULT_POSITION);
         this.controls.target.copy(this.ORBIT_FIELD_DEFAULT_TARGET);
@@ -576,6 +582,17 @@ export default class ThreeDimensionVisualizer implements Visualizer {
         widthInches: convert(STANDARD_FIELD_LENGTH, "meters", "inches"),
         heightInches: convert(STANDARD_FIELD_WIDTH, "meters", "inches"),
         defaultOrigin: "blue",
+        driverStations: DEFAULT_DRIVER_STATIONS,
+        gamePieces: []
+      };
+    } else if (fieldTitle === "Map") {
+      return {
+        name: "Map",
+        path: "",
+        rotations: [],
+        widthInches: 0,
+        heightInches: 0,
+        defaultOrigin: "auto",
         driverStations: DEFAULT_DRIVER_STATIONS,
         gamePieces: []
       };
@@ -836,6 +853,11 @@ export default class ThreeDimensionVisualizer implements Visualizer {
 
         // Render new frame
         this.shouldRender = true;
+      } else if (fieldTitle === "Map") {
+        this.field = new THREE.Group();
+        this.field.add(new THREE.AxesHelper(1));    // need to reset camera position here as well?
+        this.wpilibCoordinateGroup.add(this.field);
+        this.shouldRender = false;
       } else {
         const loader = new GLTFLoader();
         Promise.all([
@@ -904,10 +926,44 @@ export default class ThreeDimensionVisualizer implements Visualizer {
       }
 
       // Reset camera if switching between axis and non-axis or if using DS camera
-      if ((fieldTitle === "Axes") !== (this.lastFieldTitle === "Axes") || this.cameraIndex < -2) {
+      if (
+        (fieldTitle === "Axes" || fieldTitle === "Map") !== (this.lastFieldTitle === "Axes" || this.lastFieldTitle === "Map") ||
+        (fieldTitle === "Axes" || fieldTitle === "Map") && this.lastFieldTitle !== fieldTitle ||
+        this.cameraIndex < -2
+      ) {
         this.resetCamera();
       }
       this.lastFieldTitle = fieldTitle;
+    }
+
+    // Update map field if applicable
+    if (fieldTitle === "Map") {
+      // update geometry
+      console.log("render map: ", this.command.map);
+      const map = this.command.map;
+      if (map?.buffer) {
+        const width = map.size_x * map.res;
+        const height = map.size_y * map.res;
+        const texture = new THREE.DataTexture(map.buffer, map.size_x, map.size_y, THREE.LuminanceFormat, THREE.UnsignedByteType);
+        texture.needsUpdate = true;
+        const geometry = new THREE.PlaneGeometry(width, height);
+        const material = new THREE.MeshBasicMaterial({ map: texture, fog: false, reflectivity: 1, opacity: 1, side: THREE.DoubleSide });
+        const mesh = new THREE.Mesh(geometry, material);
+        mesh.position.setX(map.origin_x + width / 2);   // offsets are from the center of the quad
+        mesh.position.setY(map.origin_y + height / 2);
+        if (this.fieldMap) {
+          this.wpilibCoordinateGroup.remove(this.fieldMap);
+          disposeObject(this.fieldMap);
+          this.fieldMap = null;
+        }
+        this.fieldMap = mesh;
+        this.wpilibCoordinateGroup.add(this.fieldMap);
+      }
+    } else {
+      if (this.fieldMap) {  // remove objects if present
+        this.wpilibCoordinateGroup.remove(this.fieldMap);
+        disposeObject(this.fieldMap);
+      }
     }
 
     // Update robot
@@ -1023,7 +1079,7 @@ export default class ThreeDimensionVisualizer implements Visualizer {
     }
 
     // Update field coordinates
-    if (fieldConfig) {
+    if (fieldConfig) {  // MAP: figure out what to do here
       let isBlue = !this.command.allianceRedOrigin;
       this.wpilibFieldCoordinateGroup.setRotationFromAxisAngle(new THREE.Vector3(0, 0, 1), isBlue ? 0 : Math.PI);
       this.wpilibFieldCoordinateGroup.position.set(
