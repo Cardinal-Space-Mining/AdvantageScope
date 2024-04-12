@@ -527,7 +527,7 @@ export default class ThreeDimensionVisualizer implements Visualizer {
           this.camera.position.copy(this.ORBIT_AXES_DEFAULT_POSITION);
           this.controls.target.copy(this.ORBIT_AXES_DEFAULT_TARGET);
         } else if (this.command.options.field === "Map") {
-          this.camera.position.set(1, 1, 1);
+          this.camera.position.set(-1, 1, -1);
           this.controls.target.set(0, 0, 0);
         }
       } else {
@@ -944,10 +944,15 @@ export default class ThreeDimensionVisualizer implements Visualizer {
       if (map?.buffer) {
         const width = map.size_x * map.res;
         const height = map.size_y * map.res;
-        const texture = new THREE.DataTexture(map.buffer, map.size_x, map.size_y, THREE.LuminanceFormat, THREE.UnsignedByteType);
+        const texture = new THREE.DataTexture(map.buffer, map.size_x, map.size_y, THREE.RedFormat/*, THREE.UnsignedByteType*/);
+        // texture.internalFormat = 'LUMINANCE';
+        // texture.colorSpace = THREE.SRGBColorSpace;
+        // texture.flipY = true;
         texture.needsUpdate = true;
         const geometry = new THREE.PlaneGeometry(width, height);
-        const material = new THREE.MeshBasicMaterial({ map: texture, fog: false, reflectivity: 1, opacity: 1, side: THREE.DoubleSide });
+        const material = new THREE.MeshBasicMaterial({ map: texture, fog: false, transparent: false, opacity: 0.5, side: THREE.DoubleSide });
+        // material.color = new THREE.Color("#FF00FF");
+        material.needsUpdate = true;
         const mesh = new THREE.Mesh(geometry, material);
         mesh.position.setX(map.origin_x + width / 2);   // offsets are from the center of the quad
         mesh.position.setY(map.origin_y + height / 2);
